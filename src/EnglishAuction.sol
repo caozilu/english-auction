@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
+interface IERC721 {
+    function transferFrom(address from, address to, uint256 tokenId) external;
+}
+
 contract EnglishAuction {
     // auction states
     bool public started;
@@ -11,9 +15,22 @@ contract EnglishAuction {
     address public highestBidder;
     mapping(address => uint) public allBids;
 
-    constructor() {
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only owner can call this function");
+        _;
+    }
+
+    // for constructor
+    address payable public immutable owner;
+    IERC721 public immutable nft;
+    uint public immutable nftId;
+
+    constructor(address _nft, uint _nftId) {
         // init values
+        owner = payable(msg.sender);
         // owner and NFT
+        nft = IERC721(_nft);
+        nftId = _nftId;
     }
 
     function bid() external payable {
