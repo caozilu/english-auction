@@ -6,6 +6,10 @@ interface IERC721 {
 }
 
 contract EnglishAuction {
+    // events
+    event Start(uint stratTime, uint endTime);
+    event Bid(address indexed bidder, uint value);
+
     // auction states
     bool public started;
     bool public ended;
@@ -35,12 +39,29 @@ contract EnglishAuction {
 
     function bid() external payable {
         // validations
+        require(started, "Auction not started");
+        require(block.timestamp < endTime, "Auction ended");
+        require(msg.value > highestBid, "Bid not high enough");
+
         // highest bidder, all bids, highest bidder
+        allBids[highestBidder] += highestBid;
+        highestBidder = msg.sender;
+        highestBid = msg.value;
+
+        emit Bid(msg.sender, msg.value);
     }
 
-    function start() external onlyOwner {
+    function start(uint _openingBid, uint _duration) external onlyOwner {
         // validations
+        require(!started, "Auction already started");
+
         // update the auction state
+        highestBid = _openingBid;
+        endTime = block.timestamp + _duration;
+        nft.transferFrom(owner, address(this), nftId);
+        started = true;
+
+        emit Start(block.timestamp, endTime);
     }
 
     function end() external onlyOwner {
