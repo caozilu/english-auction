@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
 interface IERC721 {
@@ -9,6 +9,8 @@ contract EnglishAuction {
     // events
     event Start(uint stratTime, uint endTime);
     event Bid(address indexed bidder, uint value);
+    event End(address indexed highestBidder, uint value);
+    event Withdraw(address indexed bidder, uint value);
 
     // auction states
     bool public started;
@@ -66,11 +68,26 @@ contract EnglishAuction {
 
     function end() external onlyOwner {
         // validations
+        require(started, "Auction not started");
+        require(!ended, "Auction already ended");
+        require(block.timestamp >= endTime, "Auction not ended");
+
+        ended = true;
         // highest bidder receive the item
+        nft.transferFrom(address(this), highestBidder, nftId);
         // owner receives ether
+        owner.transfer(highestBid);
+
+        emit End(highestBidder, highestBid);
     }
 
     function withdraw() external {
         // bidder to receive fund from the all bids state
+        uint amount = allBids[msg.sender];
+        require(amount > 0, "No bid");
+        allBids[msg.sender] = 0;
+        payable(msg.sender).transfer(amount);
+
+        emit Withdraw(msg.sender, amount);
     }
 }
